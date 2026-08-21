@@ -1,0 +1,15 @@
+node_modules/
+*.log
+
+# secrets
+.env
+.env.*
+*.pem
+*.key
+
+# working copy only — agent instructions, planning docs, scratch tickets
+CLAUDE.md
+PRD.md
+docs/
+.scratch/
+.claude/

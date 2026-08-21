@@ -1,0 +1,18 @@
+{
+  "name": "nw",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Makes a new project in the right place, with git already correct.",
+  "type": "module",
+  "bin": {
+    "nw": "src/index.js"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "@clack/prompts": "^0.11.0",
+    "ora": "^9.4.1",
+    "picocolors": "^1.1.1"
+  }
+}
