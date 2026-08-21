@@ -98,7 +98,9 @@ export async function createProject(opts) {
       trail.failed(repo, reason(create.err));
     }
   } else if (!opts.github) {
-    trail.did(pc.dim('no github (--no-github)'));
+    // Not "(--no-github)" any more — you can get here from the prompt too, and
+    // naming a flag you didn't type reads like the tool misheard you.
+    trail.did(pc.dim('no github'));
   }
 
   spin.stop();

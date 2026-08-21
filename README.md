@@ -51,8 +51,8 @@ nw trackify product -e              # short for --open code
 nw clone <url> [bucket]             # clone into a bucket, not Downloads
 ```
 
-Run bare, it asks three things: **name**, **bucket**, **open in**. Give it positionals and it
-asks nothing.
+Run bare, it asks four things: **name**, **bucket**, **GitHub** (private / public / none), and
+**open in**. Give it both positionals and it asks nothing — every answer has a flag.
 
 ## Finding it again
 

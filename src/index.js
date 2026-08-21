@@ -10,7 +10,7 @@ import pc from 'picocolors';
 import { BUCKETS, validBuckets, bucketToPath } from './buckets.js';
 import { OPENERS, validOpeners, openIn } from './openers.js';
 import { allProjects, matchProjects, shortPath, ROOT } from './projects.js';
-import { createProject, cloneProject, dirTaken } from './create.js';
+import { createProject, cloneProject, dirTaken, GH_OWNER } from './create.js';
 import { copyCd } from './clip.js';
 import * as ui from './ui.js';
 
@@ -151,18 +151,49 @@ async function runNew(positionals, flags) {
   const dir = join(bucketToPath(bucket), name);
   if (dirTaken(dir)) die(`${dir} already exists.`);
 
-  const opener = await settleOpener(flags, positionals.length < 2);
+  const interactive = positionals.length < 2;
+  const github = await settleGithub(flags, interactive);
+  const opener = await settleOpener(flags, interactive);
 
   // Closes the prompt frame and heads the report with where this is going.
   ui.header(`${bucket}/${name}`);
 
-  await createProject({
-    name,
-    bucket,
-    github: !flags['no-github'],
-    public: flags.public,
-    opener,
+  await createProject({ name, bucket, ...github, opener });
+}
+
+/**
+ * Where the code goes: private, public, or nowhere.
+ *
+ * One question rather than two. `--public` and `--no-github` are separate flags
+ * because flags are cheap, but as prompts they'd be two stops on the way to a
+ * folder — and this tool loses to `mkdir` the moment it asks too much. They're
+ * three answers to one question anyway: how public is this.
+ *
+ * @param {Record<string, string | boolean>} flags
+ * @param {boolean} interactive
+ * @returns {Promise<{ github: boolean, public: boolean }>}
+ */
+async function settleGithub(flags, interactive) {
+  // Either flag is a decision already made. Don't ask it twice.
+  if (flags['no-github']) return { github: false, public: false };
+  if (flags.public) return { github: true, public: true };
+  if (!interactive) return { github: true, public: false };
+
+  ui.asking();
+
+  const choice = await p.select({
+    message: 'GitHub',
+    options: [
+      // Private first and highlighted: public is a decision for publishing day,
+      // not for minute zero.
+      { value: 'private', label: 'Private repo', hint: `github.com/${GH_OWNER}` },
+      { value: 'public', label: 'Public repo', hint: 'anyone can see it' },
+      { value: 'none', label: 'No GitHub', hint: 'local git only — still commits' },
+    ],
   });
+  bailIfCancelled(choice);
+
+  return { github: choice !== 'none', public: choice === 'public' };
 }
 
 /**
