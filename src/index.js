@@ -38,7 +38,9 @@ ${bucketColumns()
   .join('\n')}
 `;
 
-main();
+// Called at the bottom of the file, not here. `const` doesn't hoist, so starting
+// work mid-module means anything that reaches a sentinel like NONE without
+// awaiting first hits it before it exists — which `nw go` did, synchronously.
 
 async function main() {
   let args;
@@ -98,9 +100,9 @@ async function runGo(positionals, flags) {
   // One hit is the whole point — don't make you confirm what you already said.
   const project = found.length === 1 ? found[0] : await pickProject(found, query);
 
-  // No query and no flag means nw already had to ask which project, so it's a
-  // conversation either way — same rule as creating.
-  const opener = await settleOpener(flags, found.length > 1 || !query);
+  // Always asks, unlike creating. The point of `go` is to land somewhere, so
+  // finding the folder and then saying nothing is half an answer.
+  const opener = await settleOpener(flags, true);
 
   ui.header(shortPath(project));
   ui.next(project.dir, copyCd(project.dir));
@@ -357,3 +359,5 @@ function die(message, detail) {
   ui.fail(message, detail);
   process.exit(1);
 }
+
+main();
