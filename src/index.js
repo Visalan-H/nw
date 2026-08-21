@@ -8,8 +8,10 @@ import * as p from '@clack/prompts';
 import pc from 'picocolors';
 
 import { BUCKETS, validBuckets, bucketToPath } from './buckets.js';
-import { OPENERS, validOpeners } from './openers.js';
+import { OPENERS, validOpeners, openIn } from './openers.js';
+import { allProjects, matchProjects, shortPath, ROOT } from './projects.js';
 import { createProject, cloneProject, dirTaken } from './create.js';
+import { copyCd } from './clip.js';
 import * as ui from './ui.js';
 
 const HELP = `
@@ -19,6 +21,10 @@ const HELP = `
   ${pc.dim('nw trackify')}                         ask for the bucket
   ${pc.dim('nw trackify product')}                 just go
   ${pc.dim('nw clone <url> [bucket]')}             clone into a bucket, not Downloads
+
+  ${pc.dim('nw go trackify')}                      find it again and open it
+  ${pc.dim('nw go track')}                         partial is fine — pick from the matches
+  ${pc.dim('nw go')}                               list everything
 
   ${pc.dim('--public')}      public repo (default is private)
   ${pc.dim('--no-github')}   local git only, no remote
@@ -60,9 +66,70 @@ async function main() {
 
   if (positionals[0] === 'clone') {
     await runClone(positionals.slice(1), flags);
+  } else if (positionals[0] === 'go') {
+    await runGo(positionals.slice(1), flags);
   } else {
     await runNew(positionals, flags);
   }
+}
+
+/**
+ * Go back to something that already exists.
+ *
+ * A CLI can't change its parent shell's directory — so it doesn't try. It opens
+ * the project instead, and puts `cd <path>` on your clipboard for the times you
+ * wanted the shell you're already standing in. Picking `terminal` gets you a tab
+ * that's already there, which is the same thing by another route.
+ *
+ * @param {string[]} positionals
+ * @param {Record<string, string | boolean>} flags
+ */
+async function runGo(positionals, flags) {
+  const all = allProjects();
+  if (all.length === 0) die(`Nothing under ${ROOT} yet.`);
+
+  const query = positionals[0];
+  const found = query ? matchProjects(query, all) : all;
+
+  if (found.length === 0) {
+    die(`Nothing matching "${query}".`, [`${all.length} projects under ${ROOT}`]);
+  }
+
+  // One hit is the whole point — don't make you confirm what you already said.
+  const project = found.length === 1 ? found[0] : await pickProject(found, query);
+
+  // No query and no flag means nw already had to ask which project, so it's a
+  // conversation either way — same rule as creating.
+  const opener = await settleOpener(flags, found.length > 1 || !query);
+
+  ui.header(shortPath(project));
+  ui.next(project.dir, copyCd(project.dir));
+
+  if (opener) {
+    const started = openIn(opener, project.dir);
+    if (!started.ok) {
+      ui.couldnt(`couldn't open ${started.label} — ${started.reason}`, started.retry);
+    }
+  }
+}
+
+/**
+ * @param {import('./projects.js').Project[]} found
+ * @param {string} [query]
+ */
+async function pickProject(found, query) {
+  ui.asking();
+
+  const choice = await p.select({
+    message: query ? `${found.length} matches for "${query}"` : 'Which project',
+    options: found.map((pr) => ({
+      value: pr.dir,
+      label: pr.name,
+      hint: pr.bucket,
+    })),
+  });
+  bailIfCancelled(choice);
+  return found.find((pr) => pr.dir === choice);
 }
 
 /**

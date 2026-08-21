@@ -4,8 +4,8 @@ import pc from 'picocolors';
 
 import { bucketToPath } from './buckets.js';
 import { GITIGNORE } from './gitignore.js';
-import { run, launch, ghReady } from './run.js';
-import { findOpener } from './openers.js';
+import { run, ghReady } from './run.js';
+import { openIn } from './openers.js';
 import { copyCd } from './clip.js';
 import * as ui from './ui.js';
 
@@ -184,16 +184,10 @@ function openIt(dir, name, broke, kept) {
   // focus off the one screen you needed to read is the worst moment for it.
   if (broke) return ui.couldnt('didn\'t open — fix the above first');
 
-  const opener = findOpener(name);
-  if (!opener) return;
-
-  const started = launch(opener.cmd, opener.args(dir), { shell: opener.shell });
+  const started = openIn(name, dir);
   if (!started.ok) {
     // Not a gap: git and the remote are the contract, the editor is a convenience.
-    ui.couldnt(
-      `couldn't open ${opener.label} — ${started.reason}`,
-      `${opener.cmd} ${opener.args(dir).join(' ')}`,
-    );
+    ui.couldnt(`couldn't open ${started.label} — ${started.reason}`, started.retry);
   }
 }
 

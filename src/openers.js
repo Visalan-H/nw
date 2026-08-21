@@ -1,5 +1,7 @@
+import { launch } from './run.js';
+
 /**
- * The things a finished project can be opened in.
+ * The things a project can be opened in.
  *
  * An opener is a name mapped to a command that takes a directory. That's the
  * whole model — a flag per app doesn't survive the next editor you install.
@@ -65,4 +67,30 @@ export function validOpeners() {
  */
 export function findOpener(name) {
   return OPENERS.find((o) => o.name === name);
+}
+
+/**
+ * Open a folder in one of them.
+ *
+ * Shared by `nw` and `nw go` — a project you just made and a project you're
+ * going back to want exactly the same thing to happen.
+ *
+ * @param {string} name
+ * @param {string} dir
+ * @returns {{ ok: true } | { ok: false, label: string, reason: string, retry: string }}
+ */
+export function openIn(name, dir) {
+  const opener = findOpener(name);
+  if (!opener) return { ok: true };
+
+  const args = opener.args(dir);
+  const started = launch(opener.cmd, args, { shell: opener.shell });
+  if (started.ok) return { ok: true };
+
+  return {
+    ok: false,
+    label: opener.label,
+    reason: started.reason,
+    retry: `${opener.cmd} ${args.join(' ')}`,
+  };
 }
