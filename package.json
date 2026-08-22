@@ -2,7 +2,7 @@
   "name": "nw",
   "version": "1.0.0",
   "private": true,
-  "description": "Makes a new project in the right place, with git already correct.",
+  "description": "Puts a new project in the right place with git already correct, and finds it again later.",
   "type": "module",
   "bin": {
     "nw": "src/index.js"

@@ -1,10 +1,13 @@
 # nw
 
-**Makes a new project in the right place, with git already correct.**
+**Puts a new project in the right place with git already correct — and finds it again later.**
 
-One word. It asks where the project belongs, creates the folder, runs `git init`, makes the first
-commit, creates the private GitHub repo, wires `origin`, sets the upstream, copies `cd <path>` to
-your clipboard, and opens it in your editor.
+`nw` asks where the project belongs, creates the folder, runs `git init`, makes the first commit,
+creates the private GitHub repo, wires `origin`, sets the upstream, copies `cd <path>` to your
+clipboard, and opens it in your editor.
+
+`nw go` is the other half: type any part of a name and it finds the project among the 200-odd
+under `C:\dev\`, then opens that.
 
 ```
 nw trackify product
@@ -13,6 +16,14 @@ nw trackify product
 
   ✓ git init + first commit
   ✓ github.com/Visalan-H/trackify (private)
+
+  → cd C:\dev\product\trackify  (copied)
+```
+
+```
+nw go track
+
+  product/trackify
 
   → cd C:\dev\product\trackify  (copied)
 ```

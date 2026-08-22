@@ -15,7 +15,7 @@ import { copyCd } from './clip.js';
 import * as ui from './ui.js';
 
 const HELP = `
-  ${pc.bold('nw')} — makes a new project in the right place, with git already correct.
+  ${pc.bold('nw')} — puts a project in the right place with git already correct, and finds it again.
 
   ${pc.dim('nw')}                                  ask everything
   ${pc.dim('nw trackify')}                         ask for the bucket
