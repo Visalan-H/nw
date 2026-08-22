@@ -54,6 +54,9 @@ nw clone <url> [bucket]             # clone into a bucket, not Downloads
 Run bare, it asks four things: **name**, **bucket**, **GitHub** (private / public / none), and
 **open in**. Give it both positionals and it asks nothing — every answer has a flag.
 
+Repos are private by default. Decline GitHub entirely and it still does `git init` and the first
+commit — **a project is never created without git.** That's the one hard rule.
+
 ## Finding it again
 
 ```bash
@@ -69,9 +72,6 @@ bucket it lives in. Then it opens the project and puts `cd <path>` on your clipb
 It doesn't `cd` you there, because it can't — a CLI is a child process and can't change its
 parent shell's directory. Pick `terminal` and you get a tab that's already sitting in the folder,
 which is the same thing by another route.
-
-Repos are private by default. Decline GitHub entirely and it still does `git init` and the first
-commit — **a project is never created without git.** That's the one hard rule.
 
 ## Buckets
 
