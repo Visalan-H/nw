@@ -94,3 +94,8 @@ export function openIn(name, dir) {
     retry: `${opener.cmd} ${args.join(' ')}`,
   };
 }
+
+/** The human name, for saying what's about to open. @param {string} name */
+export function openerLabel(name) {
+  return findOpener(name)?.label;
+}

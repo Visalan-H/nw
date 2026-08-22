@@ -5,7 +5,7 @@ import pc from 'picocolors';
 import { bucketToPath } from './buckets.js';
 import { GITIGNORE } from './gitignore.js';
 import { run, ghReady } from './run.js';
-import { openIn } from './openers.js';
+import { openIn, openerLabel } from './openers.js';
 import { copyCd } from './clip.js';
 import * as ui from './ui.js';
 
@@ -156,7 +156,8 @@ function finish(trail, dir, opts, gh, retry) {
       gh.fix ? [gh.fix, ...commands] : commands,
     );
   } else {
-    ui.next(dir, kept && copyCd(dir));
+    // Named here rather than after the launch — openIt() explains why.
+    ui.next(dir, kept && copyCd(dir), kept && opts.opener ? openerLabel(opts.opener) : undefined);
   }
 
   openIt(dir, opts.opener, broke, kept);

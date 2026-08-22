@@ -73,12 +73,13 @@ commit — **a project is never created without git.** That's the one hard rule.
 ```bash
 nw go trackify                      # straight there
 nw go track                         # partial is fine
-nw go qs                            # so are initials — finds quick-share
+nw go qs                            # so are initials — letters in order, anywhere in the name
 nw go                               # list everything
 ```
 
-One match goes straight through. Several give you a menu of just those, each labelled with the
-bucket it lives in. Then it opens the project and puts `cd <path>` on your clipboard.
+One match goes straight through — it tells you which one it found before asking anything else.
+Several give you a menu of just those, each labelled with the bucket it lives in. Then it opens
+the project and puts `cd <path>` on your clipboard.
 
 It doesn't `cd` you there, because it can't — a CLI is a child process and can't change its
 parent shell's directory. Pick `terminal` and you get a tab that's already sitting in the folder,

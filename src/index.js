@@ -8,7 +8,7 @@ import * as p from '@clack/prompts';
 import pc from 'picocolors';
 
 import { BUCKETS, validBuckets, bucketToPath } from './buckets.js';
-import { OPENERS, validOpeners, openIn } from './openers.js';
+import { OPENERS, validOpeners, openIn, openerLabel } from './openers.js';
 import { allProjects, matchProjects, shortPath, ROOT } from './projects.js';
 import { createProject, cloneProject, dirTaken, GH_OWNER } from './create.js';
 import { copyCd } from './clip.js';
@@ -98,14 +98,18 @@ async function runGo(positionals, flags) {
   }
 
   // One hit is the whole point — don't make you confirm what you already said.
+  // But say which one, before asking anything else: `nw go track` and a prompt
+  // about openers, with the project never named, is nw talking about a folder
+  // you haven't been shown. The picker names it for you; this branch has to.
   const project = found.length === 1 ? found[0] : await pickProject(found, query);
+  if (found.length === 1) ui.found(shortPath(project));
 
   // Always asks, unlike creating. The point of `go` is to land somewhere, so
   // finding the folder and then saying nothing is half an answer.
   const opener = await settleOpener(flags, true);
 
   ui.header(shortPath(project));
-  ui.next(project.dir, copyCd(project.dir));
+  ui.next(project.dir, copyCd(project.dir), opener ? openerLabel(opener) : undefined);
 
   if (opener) {
     const started = openIn(opener, project.dir);
@@ -123,7 +127,9 @@ async function pickProject(found, query) {
   ui.asking();
 
   const choice = await p.select({
-    message: query ? `${found.length} matches for "${query}"` : 'Which project',
+    message: query
+      ? `${found.length} matches for "${query}"`
+      : `Which project ${pc.dim(`(${found.length})`)}`,
     options: found.map((pr) => ({
       value: pr.dir,
       label: pr.name,

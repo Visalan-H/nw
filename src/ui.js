@@ -67,18 +67,38 @@ export function steps(items) {
 }
 
 /**
+ * An answer nw filled in for you.
+ *
+ * Drawn as `◇`, the same mark clack leaves on a question you've answered —
+ * because that's what it is. One match means nw picked for you, and picking
+ * silently and then asking the next question reads like it ignored you.
+ *
+ * @param {string} label
+ */
+export function found(label) {
+  asking();
+  p.log.step(`${pc.dim('found')}  ${label}`);
+}
+
+/**
  * The one thing to do next.
  *
  * Printed whether or not something was opened. After an open it stops being an
  * instruction and becomes a receipt — a clipboard written silently is a small
  * theft, since whatever you had copied is gone and nothing said so.
  *
+ * `opening` rides on the same block rather than printing after the launch, for
+ * the reason in create.js: the new window takes focus the instant it lands, so
+ * anything said afterwards is said to an empty room.
+ *
  * @param {string} dir
  * @param {boolean} [copied]
+ * @param {string} [opening] label of what's about to be opened
  */
-export function next(dir, copied = false) {
+export function next(dir, copied = false, opening) {
   blank();
   line(`${IND}${pc.cyan('→')} cd ${dir}${copied ? pc.dim('  (copied)') : ''}`);
+  if (opening) line(`${IND}${pc.cyan('↗')} opening ${opening}`);
   line();
 }
 
