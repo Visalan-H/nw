@@ -5,17 +5,22 @@ import { join } from 'node:path';
 export const ROOT = 'C:\\dev';
 
 /**
- * Buckets that name people you work for, kept out of the repo.
+ * The parts of the tree that name people, kept out of the repo.
  *
- * Who the clients are isn't the tool's business and isn't anyone else's either,
- * so `buckets.private.json` is gitignored and read at load. Absent — a fresh
- * clone, someone else's machine — nw is simply a tool with fewer buckets.
+ * Who you work for isn't the tool's business and isn't anyone else's either, so
+ * `buckets.private.json` is gitignored and read at load. Absent — a fresh clone,
+ * someone else's machine — nw is simply a tool with fewer buckets.
  *
- *   { "work": [{ "name": "acme", "hint": "retainer" }] }
+ *   {
+ *     "children":   { "work": [{ "name": "acme", "hint": "retainer" }] },
+ *     "extraRoots": ["archive"]
+ *   }
  *
- * Keys are top-level bucket names; values are children appended to that bucket.
+ * `children` keys are top-level bucket names, values are children appended to
+ * that bucket. `extraRoots` are folders under ROOT that hold projects but are
+ * never offered when creating one — findable, not suggested.
  *
- * @returns {Record<string, Bucket[]>}
+ * @returns {{ children?: Record<string, Bucket[]>, extraRoots?: string[] }}
  */
 function privateBuckets() {
   try {
@@ -27,13 +32,16 @@ function privateBuckets() {
 
 const PRIVATE = privateBuckets();
 
+/** Folders `nw go` searches but the create picker never offers. @type {string[]} */
+export const EXTRA_ROOTS = PRIVATE.extraRoots ?? [];
+
 /**
  * Fold the untracked children into a bucket, keeping the declared ones first.
  * @param {Bucket} bucket
  * @returns {Bucket}
  */
 function withPrivate(bucket) {
-  const extra = PRIVATE[bucket.name];
+  const extra = (PRIVATE.children ?? {})[bucket.name];
   if (!extra || extra.length === 0) return bucket;
   return { ...bucket, children: [...(bucket.children ?? []), ...extra] };
 }
@@ -50,7 +58,7 @@ function withPrivate(bucket) {
  * `hint` is shown by the picker only on the highlighted row, so the menu stays a
  * short list of names instead of a wall of descriptions.
  *
- * `archive` is absent on purpose — it exists on disk, it just isn't offered here.
+ * Folders that exist on disk but shouldn't be offered here go in extraRoots.
  * `_cold` is last in the list so it's the furthest thing from an accidental pick.
  *
  * @typedef {{ name: string, hint?: string, here?: boolean, children?: Bucket[] }} Bucket

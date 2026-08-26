@@ -1,14 +1,10 @@
 import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { ROOT, validBuckets, bucketToPath } from './buckets.js';
+import { ROOT, validBuckets, bucketToPath, EXTRA_ROOTS } from './buckets.js';
 
-/**
- * Folders that hold projects but aren't offered when creating one.
- * `archive` is kept whole and deliberately absent from the create picker — but you
- * still need to be able to find what's already in it.
- */
-const EXTRA_ROOTS = [];
+// Folders that hold projects but are never offered when creating one — they
+// live in the untracked buckets.private.json. Findable, not suggested.
 
 /**
  * Every project on disk, read fresh each run.
