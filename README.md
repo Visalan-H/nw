@@ -91,8 +91,7 @@ Root is `C:\dev\`. The cut is **motive** — why does this exist — not stack, 
 
 | Bucket | For |
 |---|---|
-| `work/internal` | paid or obligated |
-| `work/clients` | acme, beta, gamma, delta |
+| `work` | paid or obligated |
 | `club/primeproject` | hackathon entries |
 | `club/techsociety` | |
 | `product` | things you wanted to exist |
@@ -101,8 +100,8 @@ Root is `C:\dev\`. The cut is **motive** — why does this exist — not stack, 
 | `play` | fun, or one joke |
 | `_cold` | dead, stalled, or untouched since 2024 |
 
-The picker shows one menu per level and nests as deep as you like. `work` and `club` never hold
-loose projects — you have to go deeper. `_cold` sits last, out of the way of an accidental pick.
+The picker shows one menu per level and nests as deep as you like. `club` never holds loose
+projects — you have to go deeper. `_cold` sits last, out of the way of an accidental pick.
 
 Adding a bucket at any depth is an edit to the array in `src/buckets.js`:
 
@@ -112,6 +111,15 @@ Adding a bucket at any depth is an edit to the array in `src/buckets.js`:
 
 `here: true` lets a project sit directly in that folder; `hint` is the description shown on the
 highlighted row. `work/clients/acme` is then a real target, in the picker and as a flag.
+
+Buckets that name a client or an employer don't belong in a repo, so they go in
+`src/buckets.private.json`, which is gitignored. Same shape, keyed by the bucket they hang off:
+
+```json
+{ "work": [{ "name": "acme", "hint": "retainer" }] }
+```
+
+Without that file `work` is just an ordinary bucket that holds projects directly.
 
 ## Opening
 

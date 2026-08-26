@@ -13,3 +13,6 @@ PRD.md
 docs/
 .scratch/
 .claude/
+
+# private bucket names — clients, employers
+src/buckets.private.json
