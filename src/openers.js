@@ -17,6 +17,10 @@ import { launch } from './run.js';
  * handed a directory, and guessing at a deep link is a string that breaks
  * silently on the next update.
  *
+ * `goOnly` keeps an opener out of the create menu. Resuming a session in a
+ * folder that didn't exist a second ago has nothing to resume, and an option
+ * that can only disappoint you shouldn't be on the list.
+ *
  * Order here is menu order.
  *
  * @typedef {{
@@ -26,6 +30,7 @@ import { launch } from './run.js';
  *   cmd: string,
  *   args: (dir: string) => string[],
  *   shell?: boolean,
+ *   goOnly?: boolean,
  * }} Opener
  * @type {Opener[]}
  */
@@ -54,7 +59,26 @@ export const OPENERS = [
     cmd: 'wt',
     args: (d) => ['-w', '0', 'nt', '-d', d, 'claude'],
   },
+  {
+    // The one you reach for going back to something — `claude -r` lists that
+    // folder's past sessions and picks up where you stopped.
+    name: 'resume',
+    label: 'Claude Code — resume',
+    hint: 'wt + claude -r — pick up a past session',
+    cmd: 'wt',
+    args: (d) => ['-w', '0', 'nt', '-d', d, 'claude', '-r'],
+    goOnly: true,
+  },
 ];
+
+/**
+ * The openers a menu should offer.
+ * @param {boolean} existing whether the project was already there
+ * @returns {Opener[]}
+ */
+export function menuOpeners(existing) {
+  return OPENERS.filter((o) => existing || !o.goOnly);
+}
 
 /** @returns {string[]} */
 export function validOpeners() {

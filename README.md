@@ -132,6 +132,11 @@ The last prompt, or `--open <name>`:
 | `antigravity` | Antigravity IDE |
 | `terminal` | a new Windows Terminal tab, in the window you're already in |
 | `claude` | the same tab, running `claude` |
+| `resume` | the same tab, running `claude -r` — pick up a past session |
+
+`resume` is offered by `nw go` only. A project created ten seconds ago has no session to
+resume, so it stays off the menu when creating — though `--open resume` still works if you
+mean it.
 
 `nothing` is first and starts highlighted, so Enter straight through behaves exactly as it did
 before the question existed. One at a time.

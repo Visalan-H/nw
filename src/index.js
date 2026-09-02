@@ -8,7 +8,7 @@ import * as p from '@clack/prompts';
 import pc from 'picocolors';
 
 import { BUCKETS, validBuckets, bucketToPath } from './buckets.js';
-import { OPENERS, validOpeners, openIn, openerLabel } from './openers.js';
+import { validOpeners, menuOpeners, openIn, openerLabel } from './openers.js';
 import { allProjects, matchProjects, shortPath, ROOT } from './projects.js';
 import { createProject, cloneProject, dirTaken, GH_OWNER } from './create.js';
 import { copyCd } from './clip.js';
@@ -106,7 +106,7 @@ async function runGo(positionals, flags) {
 
   // Always asks, unlike creating. The point of `go` is to land somewhere, so
   // finding the folder and then saying nothing is half an answer.
-  const opener = await settleOpener(flags, true);
+  const opener = await settleOpener(flags, true, true);
 
   ui.header(shortPath(project));
   ui.next(project.dir, copyCd(project.dir), opener ? openerLabel(opener) : undefined);
@@ -242,18 +242,19 @@ async function runClone(positionals, flags) {
  * @param {boolean} interactive whether nw already had to ask something
  * @returns {Promise<string | null>}
  */
-async function settleOpener(flags, interactive) {
+async function settleOpener(flags, interactive, existing = false) {
   // --open wins over -e without comment. They're the same setting.
   const flagged = flags.open ?? (flags.editor ? 'code' : null);
   if (flagged) {
     if (!validOpeners().includes(flagged)) {
       die(`"${flagged}" isn't something I can open. Pick one of:`, [validOpeners().join('  ')]);
     }
+    // The flag isn't filtered the way the menu is — you typed it, so you meant it.
     return flagged;
   }
 
   if (!interactive) return null;
-  return await pickOpener();
+  return await pickOpener(existing);
 }
 
 /**
@@ -261,14 +262,14 @@ async function settleOpener(flags, interactive) {
  * this tool did before the question existed. A third prompt can only cost you
  * what you chose to spend.
  */
-async function pickOpener() {
+async function pickOpener(existing) {
   ui.asking();
 
   const choice = await p.select({
     message: 'Open in',
     options: [
-      { value: NONE, label: 'nothing', hint: 'just make it' },
-      ...OPENERS.map((o) => ({ value: o.name, label: o.label, hint: o.hint })),
+      { value: NONE, label: 'nothing', hint: existing ? 'just the path' : 'just make it' },
+      ...menuOpeners(existing).map((o) => ({ value: o.name, label: o.label, hint: o.hint })),
     ],
   });
   bailIfCancelled(choice);
