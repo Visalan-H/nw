@@ -57,6 +57,13 @@ export async function createProject(opts) {
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, '.gitignore'), GITIGNORE);
 
+  // A folder nw just made is trusted by definition. Needed on a filesystem that
+  // reports every file as root-owned regardless of who made it — an NTFS mount
+  // under ntfs-3g, say — where git would otherwise refuse it as "dubious
+  // ownership" the moment init runs. A no-op everywhere else: adding a path
+  // that was already going to pass the check costs nothing.
+  await run('git', ['config', '--global', '--add', 'safe.directory', dir]);
+
   const init = await run('git', ['init', '-b', 'main'], { cwd: dir });
   if (!init.ok) {
     spin.stop();
@@ -117,6 +124,11 @@ export async function cloneProject(opts) {
   const trail = new Trail();
 
   mkdirSync(bucketToPath(opts.bucket), { recursive: true });
+
+  // Same reasoning as createProject: trust the folder nw is about to make
+  // before git has a chance to call it dubious. `dir` doesn't exist yet —
+  // this just registers the path, which needs no file to be there.
+  await run('git', ['config', '--global', '--add', 'safe.directory', dir]);
 
   const spin = ui.working(`cloning ${opts.url}`);
   const clone = await run('git', ['clone', opts.url, dir]);

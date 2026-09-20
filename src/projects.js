@@ -90,7 +90,7 @@ function subsequence(q, text) {
   return q.length === 0;
 }
 
-/** `C:\dev\play\otp` -> `play/otp`, for a label that says where it lives. */
+/** `<root>/play/otp` -> `play/otp`, for a label that says where it lives. */
 export function shortPath(project) {
   return `${project.bucket}/${project.name}`;
 }

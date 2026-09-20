@@ -1,4 +1,5 @@
 import { launch } from './run.js';
+import { SHIMS_NEED_SHELL, TERMINAL_NAMES, terminal } from './platform.js';
 
 /**
  * The things a project can be opened in.
@@ -6,11 +7,13 @@ import { launch } from './run.js';
  * An opener is a name mapped to a command that takes a directory. That's the
  * whole model — a flag per app doesn't survive the next editor you install.
  *
- * `shell: true` on the editors because they're `.cmd`/`.exe` shims, which can't
- * be spawned directly on Windows. `wt.exe` is a real executable and needs none.
+ * The editors are the same three names on both operating systems. The terminal
+ * isn't: `platform.js` finds whichever one this machine has and says how to hand
+ * it a directory, so the three terminal openers are that one command with
+ * different argv. Nothing here knows which terminal it got.
  *
- * `wt -w 0 nt` opens a new tab in the window you're already standing in. A new
- * window steals focus and orphans the one you ran nw from.
+ * `shell` on the editors because on Windows they're `.cmd` shims, which can't be
+ * spawned directly. On Linux they're ordinary executables and it stays off.
  *
  * Claude Code is the terminal opener with a command attached, not a fifth app —
  * the desktop app registers a `claude:` scheme but has no documented way to be
@@ -31,45 +34,85 @@ import { launch } from './run.js';
  *   args: (dir: string) => string[],
  *   shell?: boolean,
  *   goOnly?: boolean,
+ *   needsTerminal?: boolean,
  * }} Opener
- * @type {Opener[]}
  */
-export const OPENERS = [
-  { name: 'code', label: 'VS Code', hint: 'code', cmd: 'code', args: (d) => [d], shell: true },
-  { name: 'cursor', label: 'Cursor', hint: 'cursor', cmd: 'cursor', args: (d) => [d], shell: true },
+
+const TERM = terminal();
+
+/** The ones that take a directory and nothing else. @type {Opener[]} */
+const EDITORS = [
+  {
+    name: 'code',
+    label: 'VS Code',
+    hint: 'code',
+    cmd: 'code',
+    args: (d) => [d],
+    shell: SHIMS_NEED_SHELL,
+  },
+  {
+    name: 'cursor',
+    label: 'Cursor',
+    hint: 'cursor',
+    cmd: 'cursor',
+    args: (d) => [d],
+    shell: SHIMS_NEED_SHELL,
+  },
   {
     name: 'antigravity',
     label: 'Antigravity',
     hint: 'antigravity-ide',
     cmd: 'antigravity-ide',
     args: (d) => [d],
-    shell: true,
+    shell: SHIMS_NEED_SHELL,
   },
+];
+
+/**
+ * The ones that are this machine's terminal with an argv attached.
+ *
+ * `hint` is the tail of the hint — the terminal's own name goes in front of it,
+ * because which one you get is a property of the machine, not of the opener.
+ *
+ * @typedef {{ name: string, label: string, hint: string, run: string[] | null, goOnly?: boolean }} TerminalSpec
+ * @type {TerminalSpec[]}
+ */
+const TERMINAL_SPECS = [
+  { name: 'terminal', label: 'Terminal', hint: ' — a new tab here', run: null },
+  { name: 'claude', label: 'Claude Code', hint: ' + claude', run: ['claude'] },
+  // The one you reach for going back to something — `claude -r` lists that
+  // folder's past sessions and picks up where you stopped.
   {
-    name: 'terminal',
-    label: 'Terminal',
-    hint: 'wt — a new tab here',
-    cmd: 'wt',
-    args: (d) => ['-w', '0', 'nt', '-d', d],
-  },
-  {
-    name: 'claude',
-    label: 'Claude Code',
-    hint: 'wt + claude',
-    cmd: 'wt',
-    args: (d) => ['-w', '0', 'nt', '-d', d, 'claude'],
-  },
-  {
-    // The one you reach for going back to something — `claude -r` lists that
-    // folder's past sessions and picks up where you stopped.
     name: 'resume',
     label: 'Claude Code — resume',
-    hint: 'wt + claude -r — pick up a past session',
-    cmd: 'wt',
-    args: (d) => ['-w', '0', 'nt', '-d', d, 'claude', '-r'],
+    hint: ' + claude -r — pick up a past session',
+    run: ['claude', '-r'],
     goOnly: true,
   },
 ];
+
+/**
+ * A terminal spec as an opener, or nothing if there's no terminal to open.
+ * @param {TerminalSpec} spec
+ * @returns {Opener[]}
+ */
+function terminalOpener(spec) {
+  if (!TERM) return [];
+  return [
+    {
+      name: spec.name,
+      label: spec.label,
+      hint: `${TERM.cmd}${spec.hint}`,
+      cmd: TERM.cmd,
+      args: (d) => TERM.args(d, spec.run),
+      goOnly: spec.goOnly,
+      needsTerminal: true,
+    },
+  ];
+}
+
+/** @type {Opener[]} */
+export const OPENERS = [...EDITORS, ...TERMINAL_SPECS.flatMap(terminalOpener)];
 
 /**
  * The openers a menu should offer.
@@ -83,6 +126,26 @@ export function menuOpeners(existing) {
 /** @returns {string[]} */
 export function validOpeners() {
   return OPENERS.map((o) => o.name);
+}
+
+/**
+ * Names a flag may use, including the ones this machine can't do.
+ *
+ * `--open terminal` on a box with no terminal emulator should be told what's
+ * missing, not told that `terminal` isn't a word — the list of openers is part
+ * of the tool, and only one of them happens to be unavailable today.
+ *
+ * Derived, not typed out: `OPENERS` is already short a few names on a machine
+ * with no terminal, and a hand-kept copy would go stale the first time a fourth
+ * one is added — silently, since the failure is a worse error message.
+ *
+ * @type {string[]}
+ */
+export const ALL_NAMES = [...EDITORS.map((o) => o.name), ...TERMINAL_SPECS.map((s) => s.name)];
+
+/** @param {string} name */
+export function knownOpener(name) {
+  return ALL_NAMES.includes(name);
 }
 
 /**
@@ -105,7 +168,16 @@ export function findOpener(name) {
  */
 export function openIn(name, dir) {
   const opener = findOpener(name);
-  if (!opener) return { ok: true };
+  if (!opener) {
+    // Known name, no opener built — the terminal it needs isn't installed.
+    if (!knownOpener(name)) return { ok: true };
+    return {
+      ok: false,
+      label: name,
+      reason: 'no terminal emulator found',
+      retry: `install one of: ${TERMINAL_NAMES}`,
+    };
+  }
 
   const args = opener.args(dir);
   const started = launch(opener.cmd, args, { shell: opener.shell });
