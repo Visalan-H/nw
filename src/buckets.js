@@ -1,8 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-/** Root of the tree. Everything nw makes lives under here. */
-export const ROOT = 'C:\\dev';
+import { ROOT } from './platform.js';
+
+export { ROOT };
 
 /**
  * The parts of the tree that name people, kept out of the repo.
@@ -120,7 +121,7 @@ export function validBuckets() {
 }
 
 /**
- * Turn `work/clients/acme` into `C:\dev\work\clients\acme`.
+ * Turn `work/clients/acme` into `<root>/work/clients/acme`.
  * @param {string} bucket
  */
 export function bucketToPath(bucket) {

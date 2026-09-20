@@ -1,5 +1,7 @@
 import { spawn, spawnSync } from 'node:child_process';
 
+import { GH_INSTALL, onPath } from './platform.js';
+
 /**
  * Run a command without blocking the event loop. Never rejects.
  *
@@ -58,19 +60,6 @@ export function commandExists(cmd) {
 }
 
 /**
- * Is this on the PATH? Asked without running it.
- *
- * `commandExists` shells out to `<cmd> --version`, which is fine for `gh` and
- * wrong for anything with a window — `wt --version` opens a terminal, and
- * `code --version` takes about a second. `where.exe` only looks it up.
- *
- * @param {string} cmd
- */
-export function onPath(cmd) {
-  return spawnSync('where.exe', [cmd], { encoding: 'utf8' }).status === 0;
-}
-
-/**
  * Start something and walk away.
  *
  * `detached` + `unref` + an ignored stdio so nw exits now instead of sitting
@@ -79,8 +68,9 @@ export function onPath(cmd) {
  * only failure worth catching is the one that actually happens: the command
  * isn't there.
  *
- * Args are not quoted for the shell. Every path nw builds is `C:\dev` plus names
- * matched against `[A-Za-z0-9._-]`, so none of them can contain a space.
+ * Args are not quoted for the shell. Every path nw builds is the root plus names
+ * matched against `[A-Za-z0-9._-]`, so a space can only come from the root
+ * itself — `C:\dev` on Windows, `$HOME/dev` on Linux, neither of which has one.
  *
  * @param {string} cmd
  * @param {string[]} args
@@ -95,6 +85,14 @@ export function launch(cmd, args, opts = {}) {
       detached: true,
       stdio: 'ignore',
     });
+    // A failed spawn arrives as an `error` event, not a throw — the `try` above
+    // catches none of it. Unhandled, that event takes the whole process down
+    // with a stack trace, which is a spectacular way to report that an editor
+    // didn't start. The PATH check above catches the case this can mean in
+    // practice; what's left is a name that's there but won't exec (bad shebang,
+    // wrong architecture), and the report has already printed by the time we'd
+    // hear about it. So: noticed, and dropped on purpose.
+    child.on('error', () => {});
     child.unref();
     return { ok: true };
   } catch (err) {
@@ -111,7 +109,7 @@ export function ghReady() {
     return {
       ok: false,
       reason: 'gh (the GitHub CLI) is not installed',
-      fix: 'winget install --id GitHub.cli -e',
+      fix: GH_INSTALL,
     };
   }
   if (!exec('gh', ['auth', 'status']).ok) {

@@ -10,8 +10,12 @@
  * Both libraries read this at import time, so this module has to be the *first*
  * import in the entry point, before `@clack/prompts` or `ora`.
  *
+ * Nothing to do on Linux — every terminal there already answers yes.
+ *
  * Set `NW_ASCII=1` to opt out if you ever hit a console that really can't.
  */
-if (process.platform === 'win32' && process.stdout.isTTY && !process.env.NW_ASCII) {
+import { WINDOWS } from './platform.js';
+
+if (WINDOWS && process.stdout.isTTY && !process.env.NW_ASCII) {
   process.env.TERM ??= 'xterm-256color';
 }

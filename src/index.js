@@ -8,7 +8,14 @@ import * as p from '@clack/prompts';
 import pc from 'picocolors';
 
 import { BUCKETS, validBuckets, bucketToPath } from './buckets.js';
-import { validOpeners, menuOpeners, openIn, openerLabel } from './openers.js';
+import {
+  ALL_NAMES,
+  validOpeners,
+  knownOpener,
+  menuOpeners,
+  openIn,
+  openerLabel,
+} from './openers.js';
 import { allProjects, matchProjects, shortPath, ROOT } from './projects.js';
 import { createProject, cloneProject, dirTaken, GH_OWNER } from './create.js';
 import { copyCd } from './clip.js';
@@ -246,8 +253,14 @@ async function settleOpener(flags, interactive, existing = false) {
   // --open wins over -e without comment. They're the same setting.
   const flagged = flags.open ?? (flags.editor ? 'code' : null);
   if (flagged) {
-    if (!validOpeners().includes(flagged)) {
-      die(`"${flagged}" isn't something I can open. Pick one of:`, [validOpeners().join('  ')]);
+    // `knownOpener`, not `validOpeners` — an opener whose terminal isn't
+    // installed is still a real name, and openIn() says what's missing. Being
+    // told `terminal` isn't a word would send you looking in the wrong place.
+    if (!knownOpener(flagged)) {
+      // The list printed is what's accepted, not what's installed — suggesting
+      // a set that excludes the name you nearly typed is how a typo turns into
+      // half an hour of looking for the wrong thing.
+      die(`"${flagged}" isn't something I can open. Pick one of:`, [ALL_NAMES.join('  ')]);
     }
     // The flag isn't filtered the way the menu is — you typed it, so you meant it.
     return flagged;
@@ -316,7 +329,7 @@ async function pickBucket() {
   while (nodes.length > 0) {
     /** @type {{value: string, label: string, hint?: string}[]} */
     const options = [];
-    // Never offered at the top level — nothing is created loose in C:\dev.
+    // Never offered at the top level — nothing is created loose in the root.
     if (current?.here) {
       options.push({ value: HERE, label: '. (here)', hint: `straight into ${parts.join('/')}` });
     }

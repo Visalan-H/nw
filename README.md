@@ -7,7 +7,15 @@ creates the private GitHub repo, wires `origin`, sets the upstream, copies `cd <
 clipboard, and opens it in your editor.
 
 `nw go` is the other half: type any part of a name and it finds the project among the 200-odd
-under `C:\dev\`, then opens that.
+under the root, then opens that.
+
+Windows and Fedora, same tool. The root is `C:\dev\` on one and `~/dev` on the other, and the
+four things that differ (root, clipboard, terminal, how you install `gh`) all live in
+`src/platform.js`.
+
+Fedora rather than Linux-in-general because the `gh` install hint says `dnf`. Everything else on
+the Linux side probes your PATH rather than assuming a distro, so another one should work — you'd
+just get a `dnf` command in the one error message that suggests installing `gh`.
 
 ```
 nw trackify product
@@ -40,7 +48,8 @@ Every one is a decision that got skipped at minute zero, because `mkdir` doesn't
 ## Install
 
 ```bash
-winget install --id GitHub.cli -e   # for the GitHub step
+winget install --id GitHub.cli -e   # Windows
+sudo dnf install gh                 # Fedora
 gh auth login
 
 npm install
@@ -48,6 +57,9 @@ npm link                            # `nw` is now on your PATH
 ```
 
 Node 22+. Nothing to build — `npm link` means source edits are live.
+
+On Fedora, `wl-copy` is what puts `cd <path>` on the clipboard — `sudo dnf install wl-clipboard`
+if it isn't there already. Skip it and everything still works, minus the `(copied)`.
 
 ## Usage
 
@@ -87,7 +99,8 @@ which is the same thing by another route.
 
 ## Buckets
 
-Root is `C:\dev\`. The cut is **motive** — why does this exist — not stack, not language.
+Root is `C:\dev\` on Windows, `~/dev` on Linux. The cut is **motive** — why does this exist —
+not stack, not language.
 
 | Bucket | For |
 |---|---|
@@ -130,9 +143,15 @@ The last prompt, or `--open <name>`:
 | `code` | VS Code |
 | `cursor` | Cursor |
 | `antigravity` | Antigravity IDE |
-| `terminal` | a new Windows Terminal tab, in the window you're already in |
+| `terminal` | a new terminal tab, in the window you're already in |
 | `claude` | the same tab, running `claude` |
 | `resume` | the same tab, running `claude -r` — pick up a past session |
+
+The terminal is whichever one you have. Windows Terminal on Windows; on Linux nw takes the first
+of `ptyxis`, `gnome-terminal`, `konsole`, `kgx`, `wezterm`, `kitty`, `alacritty` that's on your
+PATH. The first three open a tab in the window you're already standing in — the rest can only
+open a window. With none of them installed the three terminal openers drop off the menu instead
+of failing after you pick one.
 
 `resume` is offered by `nw go` only. A project created ten seconds ago has no session to
 resume, so it stays off the menu when creating — though `--open resume` still works if you
